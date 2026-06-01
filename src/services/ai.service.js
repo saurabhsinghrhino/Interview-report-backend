@@ -1,4 +1,4 @@
-const { GoogleGenAI, Behavior } = require("@google/genai");
+const { GoogleGenAI } = require("@google/genai");
 const { z } = require("zod");
 const { zodToJsonSchema } = require("zod-to-json-schema");
 
@@ -6,7 +6,7 @@ const ai = new GoogleGenAI({
   apiKey: process.env.GEMINI_API_KEY,
 });
 
-const interviewQuestionsSchema = z.object({
+const interviewReportSchema = z.object({
   matchScore: z
     .number()
     .describe(
@@ -97,86 +97,18 @@ async function generateInterviewReport({
   selfDescription,
   jobDescription,
 }) {
-  const prompt = `
-You are an AI interview preparation assistant.
-
-Analyze the candidate profile carefully using:
-1. Resume
-2. Self Description
-3. Job Description
-
-Your task:
-- Generate technical interview questions
-- Generate behavioral interview questions
-- Identify skill gaps
-- Assign severity levels
-- Create a preparation roadmap
-
-STRICT RULES:
-- Return ONLY valid JSON
-- No markdown
-- No explanations outside JSON
-- Generate at least:
-  - 5 technical questions
-  - 5 behavioral questions
-  - 5 skill gaps
-  - 7-day preparation plan
-
-Severity Levels:
-- LOW
-- MEDIUM
-- HIGH
-
-Candidate Resume:
-${resume}
-
-Candidate Self Description:
-${selfDescription}
-
-Job Description:
-${jobDescription}
-
-Expected JSON Structure:
-
-{
-  "technicalQuestions": [
-    {
-      question: "",
-      difficulty: "",
-      topic: "",
-      expectedAnswer: ""
-    }
-  ],
-  "behavioralQuestions": [
-    {
-      question: "",
-      purpose: ""
-    }
-  ],
-  "skillGaps": [
-    {
-      skill: "",
-      severity: "",
-      reason: "",
-      improvementSuggestion: ""
-    }
-  ],
-  "preparationPlan": [
-    {
-      day: "",
-      focus: "",
-      tasks: []
-    }
-  ]
-}
+  const prompt = `Generate an interview report for a candidate with the following details:
+                        Resume: ${resume}
+                        Self Description: ${selfDescription}
+                        Job Description: ${jobDescription}
 `;
 
   const response = await ai.models.generateContent({
-    model: "gemini-3-flash-preview",
+    model: "gemini-2.5-flash",
     contents: prompt,
     config: {
       responseMimeType: "application/json",
-      responseSchema: zodToJsonSchema(interviewQuestionsSchema),
+      responseSchema: zodToJsonSchema(interviewReportSchema),
     },
   });
 

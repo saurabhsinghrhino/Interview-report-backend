@@ -1,42 +1,38 @@
-const interviewModel = require("../model/interviewReport.model");
-const { generateInterviewReport } = require("../services/ai.service");
 const pdfParse = require("pdf-parse");
+const { generateInterviewReport } = require("../services/ai.service");
+const interviewReportModel = require("../model/interviewReport.model");
 
-const generateInterViewReportController = async (req, res) => {
-  try {
-    const resumeContent = await new pdfParse.PDFParse(
-      Uint8Array.from(req.file.buffer),
-    ).getText();
-    const { selfDescription, jobDescription } = req.body;
+/**
+ * @description Controller to generate interview report based on user self description, resume and job description.
+ */
+async function generateInterViewReportController(req, res) {
+  const resumeContent = await new pdfParse.PDFParse(
+    Uint8Array.from(req.file.buffer),
+  ).getText();
+  const { selfDescription, jobDescription } = req.body;
+  console.log("resumeContent", resumeContent);
 
-    const interviewReportByAi = await generateInterviewReport({
-      resume: resumeContent.text,
-      selfDescription,
-      jobDescription,
-    });
-    console.log("AI RESPONSE:");
-    console.log(JSON.stringify(interviewReportByAi, null, 2));
+  const interViewReportByAi = await generateInterviewReport({
+    resume: resumeContent.text,
+    selfDescription,
+    jobDescription,
+  });
+  console.log("interViewReportByAi", interViewReportByAi);
 
-    console.log(Array.isArray(interviewReportByAi.technicalQuestions));
-    const interviewReportCreation = await interviewModel.create({
-      user: req.user.id,
-      resume: resumeContent.text,
-      selfDescription: selfDescription,
-      jobDescription: jobDescription,
-      ...interviewReportByAi,
-    });
+  const interviewReport = await interviewReportModel.create({
+    user: req.user.id,
+    resume: resumeContent.text,
+    selfDescription,
+    jobDescription,
+    ...interViewReportByAi,
+  });
+  console.log("interviewReport", interviewReport);
+  res.status(201).json({
+    message: "Interview report generated successfully.",
+    interviewReport,
+  });
+}
 
-    res.status(201).json({
-      message: "Interview report generated successfully",
-      interviewReportCreation,
-    });
-  } catch (error) {
-    console.log(error);
-
-    return res.status(400).json({
-      message: error.message,
-    });
-  }
+module.exports = {
+  generateInterViewReportController,
 };
-
-module.exports = { generateInterViewReportController };
